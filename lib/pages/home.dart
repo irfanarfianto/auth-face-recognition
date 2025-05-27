@@ -36,207 +36,184 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() => loading = false);
   }
 
-  void _launchURL() async =>
-      await canLaunch(Constants.githubURL)
-          ? await launch(Constants.githubURL)
-          : throw 'Could not launch ${Constants.githubURL}';
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        leading: Container(),
         elevation: 0,
         backgroundColor: Colors.transparent,
         actions: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(right: 20, top: 20),
-            child: PopupMenuButton<String>(
-              child: Icon(Icons.more_vert, color: Colors.black),
-              onSelected: (value) {
-                switch (value) {
-                  case 'Clear DB':
-                    DatabaseHelper dataBaseHelper = DatabaseHelper.instance;
-                    dataBaseHelper.deleteAll();
-                    break;
-                }
-              },
-              itemBuilder: (BuildContext context) {
-                return {'Clear DB'}.map((String choice) {
-                  return PopupMenuItem<String>(
-                    value: choice,
-                    child: Text(choice),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: Colors.blue[800]),
+            onSelected: (value) {
+              switch (value) {
+                case 'Clear DB':
+                  DatabaseHelper dataBaseHelper = DatabaseHelper.instance;
+                  dataBaseHelper.deleteAll();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Database cleared successfully')),
                   );
-                }).toList();
-              },
-            ),
+                  break;
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return {'Clear DB'}.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice),
+                );
+              }).toList();
+            },
           ),
         ],
       ),
       body:
           !loading
               ? SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 24),
                 child: SafeArea(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: <Widget>[
-                        Image(image: AssetImage('assets/logo.png')),
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.8,
-                          child: Column(
-                            children: [
-                              Text(
-                                "FACE RECOGNITION AUTHENTICATION",
-                                style: TextStyle(
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 20),
-                              Text(
-                                "Demo application that uses Flutter and tensorflow to implement authentication with facial recognition",
-                                style: TextStyle(fontSize: 16),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          children: [
-                            InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (BuildContext context) => SignIn(),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  color: Colors.white,
-                                  boxShadow: <BoxShadow>[
-                                    BoxShadow(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      blurRadius: 1,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                alignment: Alignment.center,
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 14,
-                                  horizontal: 16,
-                                ),
-                                width: MediaQuery.of(context).size.width * 0.8,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'LOGIN',
-                                      style: TextStyle(
-                                        color: Color(0xFF0F0BDB),
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Icon(Icons.login, color: Color(0xFF0F0BDB)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 10),
-                            InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (BuildContext context) => SignUp(),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  color: Color(0xFF0F0BDB),
-                                  boxShadow: <BoxShadow>[
-                                    BoxShadow(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      blurRadius: 1,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                alignment: Alignment.center,
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 14,
-                                  horizontal: 16,
-                                ),
-                                width: MediaQuery.of(context).size.width * 0.8,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'SIGN UP',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Icon(Icons.person_add, color: Colors.white),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              height: 20,
-                              width: MediaQuery.of(context).size.width * 0.8,
-                              child: Divider(thickness: 2),
-                            ),
-                            InkWell(
-                              onTap: _launchURL,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  color: Colors.black,
-                                  boxShadow: <BoxShadow>[
-                                    BoxShadow(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      blurRadius: 1,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                alignment: Alignment.center,
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 14,
-                                  horizontal: 16,
-                                ),
-                                width: MediaQuery.of(context).size.width * 0.8,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'CONTRIBUTE',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    SizedBox(width: 10),
-                                    FaIcon(
-                                      FontAwesomeIcons.github,
-                                      color: Colors.white,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      SizedBox(height: 20),
+                      Container(
+                        padding: EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.1),
+                              blurRadius: 10,
+                              spreadRadius: 5,
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                        child: Image.asset('assets/logo.png', height: 150),
+                      ),
+                      SizedBox(height: 40),
+                      Text(
+                        "FACE RECOGNITION AUTHENTICATION",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[900],
+                          height: 1.3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        "Secure authentication using facial recognition technology powered by Flutter and TensorFlow",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[700],
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 40),
+                      Column(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (BuildContext context) => SignIn(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              minimumSize: Size(double.infinity, 50),
+                              side: BorderSide(color: Colors.blue[200]!),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'LOGIN',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Icon(Icons.login, size: 20),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (BuildContext context) => SignUp(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              elevation: 4,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              minimumSize: Size(double.infinity, 50),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'SIGN UP',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Icon(Icons.person_add, size: 20),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 40),
+                      Text(
+                        "Secure • Fast • Reliable",
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                    ],
                   ),
                 ),
               )
-              : Center(child: CircularProgressIndicator()),
+              : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.blue[800]!,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      "Initializing Services...",
+                      style: TextStyle(color: Colors.blue[800], fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
     );
   }
 }

@@ -6,7 +6,6 @@ import 'package:app_face_recognition/pages/models/user.model.dart';
 import 'package:app_face_recognition/pages/widgets/face_guide_painter.dart';
 import 'package:app_face_recognition/services/face_detector_service.dart';
 import 'package:app_face_recognition/locator.dart';
-import 'package:app_face_recognition/pages/widgets/auth-action-button.dart';
 import 'package:app_face_recognition/pages/widgets/camera_header.dart';
 import 'package:app_face_recognition/services/camera.service.dart';
 import 'package:app_face_recognition/services/ml_service.dart';
@@ -32,8 +31,9 @@ class SignUpState extends State<SignUp> {
   bool _initializing = false;
 
   bool _saving = false;
-  bool _bottomSheetVisible = false;
   bool _hasAutoCaptured = false;
+  Timer? _centerTimer;
+  int _centerHoldSeconds = 0;
 
   // service injection
   final FaceDetectorService _faceDetectorService =
@@ -86,7 +86,6 @@ class SignUpState extends State<SignUp> {
       // Simpan sementara state UI
       setState(() {
         pictureTaken = true;
-        _bottomSheetVisible = true;
       });
 
       // Dapatkan embedding wajah
@@ -215,16 +214,25 @@ class SignUpState extends State<SignUp> {
             final isCentered =
                 (faceCenterX - centerX).abs() < tolerance &&
                 (faceCenterY - centerY).abs() < tolerance;
-            print(
-              'Face center: ($faceCenterX, $faceCenterY), '
-              'Frame center: ($centerX, $centerY), '
-              'isCentered: $isCentered',
-            );
 
             if (isCentered && !_hasAutoCaptured && !_saving && mounted) {
-              _hasAutoCaptured = true;
-              onShot();
+              _centerTimer ??= Timer.periodic(const Duration(seconds: 1), (
+                timer,
+              ) {
+                _centerHoldSeconds++;
+                if (_centerHoldSeconds >= 3) {
+                  _centerTimer?.cancel();
+                  _centerTimer = null;
+                  _hasAutoCaptured = true;
+                  onShot();
+                }
+              });
+            } else {
+              _centerTimer?.cancel();
+              _centerTimer = null;
+              _centerHoldSeconds = 0;
             }
+
             if (_saving) {
               // Jika _mlService.setCurrentPrediction juga async dan ada setState di callbacknya,
               // pastikan ada cek 'mounted' di sana juga atau di callbacknya.
@@ -255,15 +263,6 @@ class SignUpState extends State<SignUp> {
 
   _onBackPressed() {
     Navigator.of(context).pop();
-  }
-
-  _reload() {
-    setState(() {
-      _bottomSheetVisible = false;
-      pictureTaken = false;
-      _hasAutoCaptured = false;
-    });
-    _start();
   }
 
   @override
@@ -314,7 +313,25 @@ class SignUpState extends State<SignUp> {
                         face: faceDetected,
                         imageSize: imageSize!,
                       ),
-                      child: Container(),
+                    ),
+                    Positioned(
+                      bottom: 40,
+                      left: 0,
+                      right: 0,
+                      child: Text(
+                        faceDetected != null
+                            ? (_centerHoldSeconds > 0
+                                ? 'Tahan posisi wajah... $_centerHoldSeconds/3 detik'
+                                : 'Posisikan wajah di dalam oval')
+                            : 'Mencari wajah...',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          backgroundColor: Colors.black45,
+                        ),
+                      ),
                     ),
                   ],
                 ),
