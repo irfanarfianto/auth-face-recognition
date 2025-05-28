@@ -44,5 +44,5 @@ flutter {
 
 dependencies {
     implementation("org.tensorflow:tensorflow-lite-gpu:2.12.0")
-    // Tambahkan dependency lain di sini sesuai kebutuhan
+    implementation("com.google.android.play:core:1.10.3")
 }
