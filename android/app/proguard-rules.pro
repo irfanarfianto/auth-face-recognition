@@ -1,7 +1,6 @@
 # ============================
 # Flutter and Dart rules
 # ============================
-# Keep classes used by Flutter
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
 -keep class io.flutter.embedding.** { *; }
@@ -26,7 +25,7 @@
 -keep class org.tensorflow.lite.nnapi.** { *; }
 -dontwarn org.tensorflow.lite.nnapi.**
 
-# Keep internal TFLite native functions
+# Keep internal TFLite native methods
 -keepclassmembers class * {
     native <methods>;
 }
@@ -38,23 +37,25 @@
 -dontwarn androidx.camera.**
 
 # ============================
+# WebView support (if needed)
+# ============================
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# ============================
 # Prevent R8 from removing annotations and metadata
 # ============================
 -keepattributes *Annotation*, InnerClasses, EnclosingMethod
 
 # ============================
-# General rules for common issues
+# App-specific rules
 # ============================
--keep class com.example.app_face_recognition.** { *; } 
--keepclassmembers class * {
-    @android.webkit.JavascriptInterface <methods>;
-}
+-keep class com.example.app_face_recognition.** { *; }
 
-# Optional: Prevent shrinking for all model files
--keepresources regex .*/.*\.tflite
--keepresources regex .*/.*\.lite
-
-# Optional: Useful to keep logs during debugging
+# ============================
+# Optional: Keep log methods (for debugging)
+# ============================
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
     public static *** v(...);
