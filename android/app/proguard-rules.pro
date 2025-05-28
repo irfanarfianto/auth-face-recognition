@@ -8,24 +8,19 @@
 # ============================
 # ML Kit + TensorFlow Lite
 # ============================
-
-# Keep ML Kit and related classes
 -keep class com.google.mlkit.** { *; }
 -dontwarn com.google.mlkit.**
 
-# Keep TensorFlow Lite base
 -keep class org.tensorflow.** { *; }
 -dontwarn org.tensorflow.**
 
-# Keep TensorFlow Lite GPU delegate
 -keep class org.tensorflow.lite.gpu.** { *; }
 -dontwarn org.tensorflow.lite.gpu.**
 
-# Keep TensorFlow Lite NNAPI delegate
 -keep class org.tensorflow.lite.nnapi.** { *; }
 -dontwarn org.tensorflow.lite.nnapi.**
 
-# Keep internal TFLite native methods
+# Keep native methods
 -keepclassmembers class * {
     native <methods>;
 }
@@ -60,3 +55,9 @@
     public static *** d(...);
     public static *** v(...);
 }
+
+# ============================
+# Play Core Library (for deferred components)
+# ============================
+-keep class com.google.android.play.** { *; }
+-dontwarn com.google.android.play.**
