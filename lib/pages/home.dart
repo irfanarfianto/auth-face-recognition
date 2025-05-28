@@ -1,4 +1,3 @@
-import 'package:app_face_recognition/constants/constants.dart';
 import 'package:app_face_recognition/locator.dart';
 import 'package:app_face_recognition/pages/db/databse_helper.dart';
 import 'package:app_face_recognition/pages/sign-in.dart';
@@ -7,10 +6,10 @@ import 'package:app_face_recognition/services/camera.service.dart';
 import 'package:app_face_recognition/services/ml_service.dart';
 import 'package:app_face_recognition/services/face_detector_service.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class MyHomePage extends StatefulWidget {
+  static const String routeName = '/home';
+  static const String routePath = '/';
   const MyHomePage({super.key});
   @override
   State<MyHomePage> createState() => _MyHomePageState();

@@ -5,6 +5,7 @@ import 'package:app_face_recognition/pages/profile.dart';
 import 'package:app_face_recognition/pages/widgets/app_button.dart';
 import 'package:app_face_recognition/services/camera.service.dart';
 import 'package:app_face_recognition/services/ml_service.dart';
+import 'package:app_face_recognition/utils/toast.dart';
 import 'package:flutter/material.dart';
 import '../home.dart';
 import 'app_text_field.dart';
@@ -55,23 +56,15 @@ class _AuthActionButtonState extends State<AuthActionButton> {
   Future _signIn(context) async {
     String password = _passwordTextEditingController.text;
     if (predictedUser!.password == password) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (BuildContext context) => Profile(
-                predictedUser!.user,
-                imagePath: _cameraService.imagePath!,
-              ),
-        ),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(content: Text('Wrong password!'));
+      context.pushNamed(
+        Profile.routeName,
+        queryParameters: {
+          'username': predictedUser!.user,
+          'imagePath': _cameraService.imagePath!,
         },
       );
+    } else {
+      ToastUtils.show("Password Salah",);
     }
   }
 
@@ -145,10 +138,7 @@ class _AuthActionButtonState extends State<AuthActionButton> {
                 style: TextStyle(fontSize: 20),
               )
               : widget.isLogin
-              ? Text(
-                'User not found 😞',
-                style: TextStyle(fontSize: 20),
-              )
+              ? Text('User not found 😞', style: TextStyle(fontSize: 20))
               : Container(),
           Column(
             children: [

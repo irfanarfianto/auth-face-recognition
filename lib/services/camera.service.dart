@@ -1,7 +1,7 @@
-import 'dart:ui';
-
 import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 
 class CameraService {
   CameraController? _cameraController;
@@ -15,6 +15,11 @@ class CameraService {
 
   Future<void> initialize() async {
     if (_cameraController != null) return;
+    try {
+      await ScreenBrightness.instance.setApplicationScreenBrightness(1.0);
+    } catch (e) {
+      debugPrint("Gagal set brightness: $e");
+    }
     CameraDescription description = await _getCameraDescription();
     await _setupCameraController(description: description);
     _cameraRotation = rotationIntToImageRotation(description.sensorOrientation);
@@ -74,6 +79,11 @@ class CameraService {
   }
 
   dispose() async {
+    try {
+      await ScreenBrightness.instance.resetApplicationScreenBrightness();
+    } catch (e) {
+      debugPrint("Gagal reset brightness: $e");
+    }
     await _cameraController?.dispose();
     _cameraController = null;
   }

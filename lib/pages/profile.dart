@@ -3,21 +3,23 @@ import 'dart:io';
 import 'package:app_face_recognition/pages/widgets/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import 'home.dart';
 
 class Profile extends StatelessWidget {
-  const Profile(this.username, {super.key, required this.imagePath});
+  static const String routeName = 'profile';
+  static const String routePath = '/profile';
+
   final String username;
   final String imagePath;
 
-  final String githubURL =
-      "https://github.com/MCarlomagno/FaceRecognitionAuth/tree/master";
+  const Profile({super.key, required this.username, required this.imagePath});
 
-  void _launchURL() async =>
-      await canLaunch(githubURL)
-          ? await launch(githubURL)
-          : throw 'Could not launch $githubURL';
+  factory Profile.fromState(GoRouterState state) {
+    final username = state.uri.queryParameters['username'] ?? 'Unknown';
+    final imagePath = state.uri.queryParameters['imagePath'] ?? '';
+    return Profile(username: username, imagePath: imagePath);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,35 +38,40 @@ class Profile extends StatelessWidget {
                       image: FileImage(File(imagePath)),
                     ),
                   ),
-                  margin: EdgeInsets.all(20),
+                  margin: const EdgeInsets.all(20),
                   width: 50,
                   height: 50,
                 ),
                 Text(
                   'Hi $username!',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
             Container(
-              margin: EdgeInsets.all(20),
-              padding: EdgeInsets.all(20),
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Color(0xFFFEFFC1),
+                color: const Color(0xFFFEFFC1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.warning_amber_outlined, size: 30),
-                  SizedBox(height: 10),
-                  Text(
-                    '''If you think this project seems interesting and you want to contribute or need some help implementing it, dont hesitate and lets get in touch!''',
+                  const Icon(Icons.warning_amber_outlined, size: 30),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '''If you think this project seems interesting and you want to contribute or need some help implementing it, don't hesitate and let’s get in touch!''',
                     style: TextStyle(fontSize: 16),
                     textAlign: TextAlign.left,
                   ),
-                  Divider(height: 30),
+                  const Divider(height: 30),
                   InkWell(
-                    onTap: _launchURL,
+                    onTap: () {
+                      // TODO: Handle GitHub link
+                    },
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
@@ -73,17 +80,17 @@ class Profile extends StatelessWidget {
                           BoxShadow(
                             color: Colors.blue.withOpacity(0.1),
                             blurRadius: 1,
-                            offset: Offset(0, 2),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       alignment: Alignment.center,
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         vertical: 14,
                         horizontal: 16,
                       ),
                       width: MediaQuery.of(context).size.width * 0.8,
-                      child: Row(
+                      child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
@@ -91,10 +98,7 @@ class Profile extends StatelessWidget {
                             style: TextStyle(color: Colors.white),
                           ),
                           SizedBox(width: 10),
-                          FaIcon(
-                            FontAwesomeIcons.github,
-                            color: Colors.white,
-                          ),
+                          FaIcon(FontAwesomeIcons.github, color: Colors.white),
                         ],
                       ),
                     ),
@@ -102,19 +106,16 @@ class Profile extends StatelessWidget {
                 ],
               ),
             ),
-            Spacer(),
+            const Spacer(),
             AppButton(
               text: "LOG OUT",
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => MyHomePage()),
-                );
+                context.go(MyHomePage.routePath); // <- replace push with go
               },
-              icon: Icon(Icons.logout, color: Colors.white),
-              color: Color(0xFFFF6161),
+              icon: const Icon(Icons.logout, color: Colors.white),
+              color: const Color(0xFFFF6161),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
           ],
         ),
       ),

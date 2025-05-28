@@ -1,23 +1,27 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'package:app_face_recognition/utils/toast.dart';
+import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+
 import 'package:app_face_recognition/pages/db/databse_helper.dart';
 import 'package:app_face_recognition/pages/models/user.model.dart';
 import 'package:app_face_recognition/pages/widgets/face_guide_painter.dart';
-import 'package:app_face_recognition/services/face_detector_service.dart';
-import 'package:app_face_recognition/locator.dart';
 import 'package:app_face_recognition/pages/widgets/camera_header.dart';
+import 'package:app_face_recognition/services/face_detector_service.dart';
 import 'package:app_face_recognition/services/camera.service.dart';
 import 'package:app_face_recognition/services/ml_service.dart';
-import 'package:camera/camera.dart';
-import 'package:flutter/material.dart';
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:app_face_recognition/locator.dart';
 
 class SignUp extends StatefulWidget {
+  static const String routeName = 'signup';
+  static const String routePath = '/signup';
   const SignUp({super.key});
 
   @override
-  SignUpState createState() => SignUpState();
+  State<SignUp> createState() => SignUpState();
 }
 
 class SignUpState extends State<SignUp> {
@@ -27,15 +31,13 @@ class SignUpState extends State<SignUp> {
 
   bool _detectingFaces = false;
   bool pictureTaken = false;
-
   bool _initializing = false;
-
   bool _saving = false;
   bool _hasAutoCaptured = false;
+
   Timer? _centerTimer;
   int _centerHoldSeconds = 0;
 
-  // service injection
   final FaceDetectorService _faceDetectorService =
       locator<FaceDetectorService>();
   final CameraService _cameraService = locator<CameraService>();
@@ -44,38 +46,95 @@ class SignUpState extends State<SignUp> {
   @override
   void initState() {
     super.initState();
-    _start();
+    _startCamera();
   }
 
   @override
   void dispose() {
+    _centerTimer?.cancel();
     _cameraService.dispose();
     _faceDetectorService.dispose();
     super.dispose();
   }
 
-  _start() async {
+  Future<void> _startCamera() async {
     setState(() => _initializing = true);
     await _cameraService.initialize();
     setState(() => _initializing = false);
 
-    _frameFaces();
+    imageSize = _cameraService.getImageSize();
+    _startImageStream();
+  }
+
+  void _startImageStream() {
+    _cameraService.cameraController?.startImageStream((image) async {
+      if (_detectingFaces || _saving) return;
+
+      _detectingFaces = true;
+      try {
+        await _faceDetectorService.detectFacesFromStream(image);
+
+        if (!mounted) return;
+
+        if (_faceDetectorService.faces.isNotEmpty) {
+          final face = _faceDetectorService.faces.first;
+          final faceBox = face.boundingBox;
+          final imageWidth = imageSize?.width ?? 0;
+          final imageHeight = imageSize?.height ?? 0;
+          final faceCenterX = faceBox.left + faceBox.width / 2;
+          final faceCenterY = faceBox.top + faceBox.height / 2;
+          const tolerance = 50.0;
+
+          final isCentered =
+              (faceCenterX - imageWidth / 2).abs() < tolerance &&
+              (faceCenterY - imageHeight / 2).abs() < tolerance;
+
+          setState(() {
+            faceDetected = face;
+          });
+
+          if (isCentered && !_hasAutoCaptured) {
+            _centerTimer ??= Timer.periodic(const Duration(seconds: 1), (
+              timer,
+            ) {
+              _centerHoldSeconds++;
+              if (_centerHoldSeconds >= 3) {
+                _centerTimer?.cancel();
+                _centerTimer = null;
+                _hasAutoCaptured = true;
+                onShot();
+              }
+            });
+          } else {
+            _resetTimer();
+          }
+        } else {
+          setState(() => faceDetected = null);
+          _resetTimer();
+        }
+      } catch (e) {
+        debugPrint('Face detection error: $e');
+      } finally {
+        _detectingFaces = false;
+      }
+    });
+  }
+
+  void _resetTimer() {
+    _centerTimer?.cancel();
+    _centerTimer = null;
+    _centerHoldSeconds = 0;
   }
 
   Future<bool> onShot() async {
     if (faceDetected == null) {
-      showDialog(
-        context: context,
-        builder:
-            (context) => const AlertDialog(content: Text('No face detected!')),
-      );
+      ToastUtils.show("No face detected!");
       return false;
     }
 
     try {
       setState(() => _saving = true);
-      await Future.delayed(const Duration(milliseconds: 500));
-      XFile? file = await _cameraService.takePicture();
+      final file = await _cameraService.takePicture();
       imagePath = file?.path;
 
       if (file == null || imagePath == null) {
@@ -83,35 +142,55 @@ class SignUpState extends State<SignUp> {
         return false;
       }
 
-      // Simpan sementara state UI
-      setState(() {
-        pictureTaken = true;
-      });
+      setState(() => pictureTaken = true);
 
-      // Dapatkan embedding wajah
       await _mlService.setCurrentPredictionFromPath(imagePath!);
-      final List embedding = _mlService.predictedData;
+      final embedding = _mlService.predictedData;
 
       if (embedding.isEmpty) {
-        showDialog(
-          context: context,
-          builder:
-              (context) => const AlertDialog(
-                content: Text('Face embedding gagal dibuat.'),
-              ),
-        );
+        ToastUtils.show("Face embedding gagal dibuat.");
         setState(() => _saving = false);
         return false;
       }
 
-      // Pop-up form untuk input nama & password
-      final result = await showDialog<Map<String, String>>(
-        context: context,
-        builder: (context) {
-          final nameController = TextEditingController();
-          final passwordController = TextEditingController();
+      final result = await _showInputDialog();
+      if (result == null) {
+        setState(() {
+          _saving = false;
+          pictureTaken = false;
+          imagePath = null;
+          _hasAutoCaptured = false;
+        });
+        _startImageStream();
+        return false;
+      }
 
-          return AlertDialog(
+      final newUser = User(
+        user: result['name']!,
+        password: result['password']!,
+        modelData: embedding,
+      );
+
+      await DatabaseHelper.instance.insert(newUser);
+      ToastUtils.show("Data wajah berhasil disimpan!");
+
+      setState(() => _saving = false);
+      return true;
+    } catch (e) {
+      debugPrint('Error saving face data: $e');
+      setState(() => _saving = false);
+      return false;
+    }
+  }
+
+  Future<Map<String, String>?> _showInputDialog() {
+    final nameController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    return showDialog<Map<String, String>>(
+      context: context,
+      builder:
+          (_) => AlertDialog(
             title: const Text("Lengkapi Data"),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -129,11 +208,10 @@ class SignUpState extends State<SignUp> {
             ),
             actions: [
               TextButton(
+                onPressed: () => Navigator.of(context).pop(),
                 child: const Text("Batal"),
-                onPressed: () => Navigator.of(context).pop(null),
               ),
               TextButton(
-                child: const Text("Simpan"),
                 onPressed: () {
                   final name = nameController.text.trim();
                   final password = passwordController.text.trim();
@@ -143,140 +221,24 @@ class SignUpState extends State<SignUp> {
                     ).pop({'name': name, 'password': password});
                   }
                 },
+                child: const Text("Simpan"),
               ),
             ],
-          );
-        },
-      );
-
-      if (result == null) {
-        setState(() => _saving = false);
-        return false;
-      }
-
-      final newUser = User(
-        user: result['name']!,
-        password: result['password']!,
-        modelData: embedding,
-      );
-
-      await DatabaseHelper.instance.insert(newUser);
-
-      showDialog(
-        context: context,
-        builder:
-            (context) => const AlertDialog(
-              content: Text('Data wajah berhasil disimpan!'),
-            ),
-      );
-
-      setState(() => _saving = false);
-      return true;
-    } catch (e) {
-      print('Error saving face data: $e');
-      setState(() => _saving = false);
-      return false;
-    }
-  }
-
-  _frameFaces() {
-    imageSize = _cameraService.getImageSize();
-
-    _cameraService.cameraController?.startImageStream((image) async {
-      if (_cameraService.cameraController != null) {
-        if (_detectingFaces) return;
-
-        _detectingFaces = true;
-
-        try {
-          await _faceDetectorService.detectFacesFromStream(image);
-
-          // Penting: Periksa apakah widget masih mounted sebelum setState
-          if (!mounted) {
-            _detectingFaces = false;
-            return; // Keluar jika widget sudah tidak mounted
-          }
-
-          if (_faceDetectorService.faces.isNotEmpty) {
-            setState(() {
-              // Sekarang aman karena sudah ada cek 'mounted'
-              faceDetected = _faceDetectorService.faces[0];
-            });
-            final faceBox = faceDetected!.boundingBox;
-            final imageWidth = imageSize?.width ?? 0;
-            final imageHeight = imageSize?.height ?? 0;
-            final centerX = imageWidth / 2;
-            final centerY = imageHeight / 2;
-            final faceCenterX = faceBox.left + faceBox.width / 2;
-            final faceCenterY = faceBox.top + faceBox.height / 2;
-            const double tolerance = 50.0;
-
-            final isCentered =
-                (faceCenterX - centerX).abs() < tolerance &&
-                (faceCenterY - centerY).abs() < tolerance;
-
-            if (isCentered && !_hasAutoCaptured && !_saving && mounted) {
-              _centerTimer ??= Timer.periodic(const Duration(seconds: 1), (
-                timer,
-              ) {
-                _centerHoldSeconds++;
-                if (_centerHoldSeconds >= 3) {
-                  _centerTimer?.cancel();
-                  _centerTimer = null;
-                  _hasAutoCaptured = true;
-                  onShot();
-                }
-              });
-            } else {
-              _centerTimer?.cancel();
-              _centerTimer = null;
-              _centerHoldSeconds = 0;
-            }
-
-            if (_saving) {
-              // Jika _mlService.setCurrentPrediction juga async dan ada setState di callbacknya,
-              // pastikan ada cek 'mounted' di sana juga atau di callbacknya.
-              _mlService.setCurrentPrediction(image, faceDetected!);
-              if (mounted) {
-                // Cek lagi jika ada setState setelah operasi _mlService
-                setState(() {
-                  _saving = false;
-                });
-              }
-            }
-          } else {
-            print('face is null');
-            setState(() {
-              // Sekarang aman
-              faceDetected = null;
-            });
-          }
-
-          _detectingFaces = false;
-        } catch (e) {
-          print('Error _faceDetectorService face => $e');
-          _detectingFaces = false;
-        }
-      }
-    });
-  }
-
-  _onBackPressed() {
-    Navigator.of(context).pop();
+          ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final double mirror = math.pi;
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
+    final double mirror = math.pi;
 
-    late Widget body;
+    Widget body;
+
     if (_initializing) {
-      body = Center(child: CircularProgressIndicator());
-    }
-
-    if (!_initializing && pictureTaken) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (pictureTaken && imagePath != null) {
       body = SizedBox(
         width: width,
         height: height,
@@ -289,9 +251,7 @@ class SignUpState extends State<SignUp> {
           ),
         ),
       );
-    }
-
-    if (!_initializing && !pictureTaken) {
+    } else {
       body = Transform.scale(
         scale: 1.0,
         child: AspectRatio(
@@ -303,17 +263,20 @@ class SignUpState extends State<SignUp> {
               child: SizedBox(
                 width: width,
                 height:
-                    width * _cameraService.cameraController!.value.aspectRatio,
+                    width *
+                    (_cameraService.cameraController?.value.aspectRatio ?? 1.0),
                 child: Stack(
                   fit: StackFit.expand,
-                  children: <Widget>[
-                    CameraPreview(_cameraService.cameraController!),
-                    CustomPaint(
-                      painter: FaceGuidePainter(
-                        face: faceDetected,
-                        imageSize: imageSize!,
+                  children: [
+                    if (_cameraService.cameraController != null)
+                      CameraPreview(_cameraService.cameraController!),
+                    if (faceDetected != null && imageSize != null)
+                      CustomPaint(
+                        painter: FaceGuidePainter(
+                          face: faceDetected!,
+                          imageSize: imageSize!,
+                        ),
                       ),
-                    ),
                     Positioned(
                       bottom: 40,
                       left: 0,
@@ -325,7 +288,7 @@ class SignUpState extends State<SignUp> {
                                 : 'Posisikan wajah di dalam oval')
                             : 'Mencari wajah...',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -346,7 +309,10 @@ class SignUpState extends State<SignUp> {
       body: Stack(
         children: [
           body,
-          CameraHeader("SIGN UP", onBackPressed: _onBackPressed),
+          CameraHeader(
+            "SIGN UP",
+            onBackPressed: () => Navigator.of(context).pop(),
+          ),
         ],
       ),
     );

@@ -5,16 +5,27 @@ import 'package:app_face_recognition/services/camera.service.dart';
 import 'package:app_face_recognition/services/face_detector_service.dart';
 import 'package:flutter/material.dart';
 
-class CameraDetectionPreview extends StatelessWidget {
+class CameraDetectionPreview extends StatefulWidget {
   CameraDetectionPreview({super.key});
 
+  @override
+  State<CameraDetectionPreview> createState() => _CameraDetectionPreviewState();
+}
+
+class _CameraDetectionPreviewState extends State<CameraDetectionPreview> {
   final CameraService _cameraService = locator<CameraService>();
   final FaceDetectorService _faceDetectorService =
       locator<FaceDetectorService>();
 
   @override
   Widget build(BuildContext context) {
+    final controller = _cameraService.cameraController;
+    if (controller == null || !controller.value.isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final width = MediaQuery.of(context).size.width;
+
     return Transform.scale(
       scale: 1.0,
       child: AspectRatio(
@@ -25,8 +36,7 @@ class CameraDetectionPreview extends StatelessWidget {
             fit: BoxFit.fitHeight,
             child: SizedBox(
               width: width,
-              height:
-                  width * _cameraService.cameraController!.value.aspectRatio,
+              height: width * controller.value.aspectRatio,
               child: Stack(
                 fit: StackFit.expand,
                 children: <Widget>[

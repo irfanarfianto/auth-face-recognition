@@ -4,6 +4,7 @@ import 'package:app_face_recognition/pages/profile.dart';
 import 'package:app_face_recognition/pages/widgets/app_button.dart';
 import 'package:app_face_recognition/pages/widgets/app_text_field.dart';
 import 'package:app_face_recognition/services/camera.service.dart';
+import 'package:app_face_recognition/utils/toast.dart';
 import 'package:flutter/material.dart';
 
 class SignInSheet extends StatelessWidget {
@@ -15,21 +16,15 @@ class SignInSheet extends StatelessWidget {
 
   Future _signIn(context, user) async {
     if (user.password == _passwordController.text) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (BuildContext context) =>
-                  Profile(user.user, imagePath: _cameraService.imagePath!),
-        ),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(content: Text('Wrong password!'));
+      context.pushNamed(
+        Profile.routeName,
+        queryParameters: {
+          'username': user.user,
+          'imagePath': _cameraService.imagePath!,
         },
       );
+    } else {
+      ToastUtils.show("Password salah");
     }
   }
 
@@ -41,10 +36,7 @@ class SignInSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Welcome back, ${user.user}.',
-            style: TextStyle(fontSize: 20),
-          ),
+          Text('Welcome back, ${user.user}.', style: TextStyle(fontSize: 20)),
           Column(
             children: [
               SizedBox(height: 10),
